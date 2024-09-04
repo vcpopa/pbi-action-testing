@@ -10,7 +10,7 @@
         "expression": [
           "let",
           "",
-          "    AddSums = Table.AddColumn(Source, \"Sum\", each [A] + [B] + [C] + 2),",
+          "    AddSums = Table.AddColumn(Source, \"Sum\", each [A] + [B] + [C] + 5),",
           "    NewTable1 = Table.SelectColumns(AddSums, {\"Sum\"})",
           "in",
           "    NewTable1"
