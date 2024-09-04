@@ -1,0 +1,31 @@
+{
+  "name": "CalculatedTable1",
+  "lineageTag": "56d52ca0-7c20-423f-bbe9-ab9f4ecf0ec1",
+  "partitions": [
+    {
+      "name": "CalculatedTable1",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "",
+          "    AddSums = Table.AddColumn(Source, \"Sum\", each [A] + [B] + [C] + 2),",
+          "    NewTable1 = Table.SelectColumns(AddSums, {\"Sum\"})",
+          "in",
+          "    NewTable1"
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "name": "PBI_NavigationStepName",
+      "value": "Navigation"
+    },
+    {
+      "name": "PBI_ResultType",
+      "value": "Table"
+    }
+  ]
+}

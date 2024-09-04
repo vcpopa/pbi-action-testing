@@ -1,0 +1,14 @@
+{
+  "name": "A",
+  "dataType": "int64",
+  "sourceColumn": "A",
+  "formatString": "0",
+  "lineageTag": "4bd13893-05c3-42d8-889b-cceb7737c6a0",
+  "summarizeBy": "sum",
+  "annotations": [
+    {
+      "name": "SummarizationSetBy",
+      "value": "Automatic"
+    }
+  ]
+}
