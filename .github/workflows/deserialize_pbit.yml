@@ -1,0 +1,24 @@
+name: Deserialize PBIT
+
+on:
+  pull_request:
+    paths:
+      - '**/*.pbit'
+
+jobs:
+  deserialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+      - name: Deserialize PBIT files
+        run: ${GITHUB_WORKSPACE}/action.sh
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Deserialize Power BI files
