@@ -1,18 +1,18 @@
-name: Extract PBIX metadata
+name: Extract PBIT metadata
 
 on:
   workflow_dispatch:
     inputs:
       path_filter:
-        description: 'Repository path of PBIX files to process.'
+        description: 'Repository path of PBIT files to process.'
         required: false
         default: "/"
   push:
     paths:
-    - '**/*.pbix' # whenever a .pbix file is pushed
+    - '**/*.pbit' # whenever a .pbit file is pushed
 
 jobs:
-  extract_pbix_metadata:
+  extract_pbit_metadata:
     runs-on: windows-latest
     environment: PowerBI  # <-- change this to match your library/variable group
 
@@ -37,7 +37,7 @@ jobs:
           Remove-Item $DownloadDestination
       shell: pwsh
 
-    - name: Extract-PBIXMetadata
+    - name: Extract-PBITMetadata
       env:
         GIT_EVENT_BEFORE: ${{ github.event.before }}
         GIT_EVENT_AFTER: ${{ github.event.after }}
@@ -105,30 +105,30 @@ jobs:
           }
 
           Write-Information "Triggered By: $triggered_by"
-          Write-Information "Getting changed .pbix files ..."
+          Write-Information "Getting changed .pbit files ..."
           if ($triggered_by -like "*CI" -or $triggered_by -eq "push") {
-            # get the changed .pbix files in the current push
-            Write-Information "git diff --name-only $git_event_before $git_event_after --diff-filter=ACM ""*.pbix"""
-            $pbix_files = @($(git diff --name-only $git_event_before $git_event_after --diff-filter=ACM "*.pbix"))
-            $pbix_files = $pbix_files | ForEach-Object { Join-Path $root_path $_ | Get-Item }
+            # get the changed .pbit files in the current push
+            Write-Information "git diff --name-only $git_event_before $git_event_after --diff-filter=ACM ""*.pbit"""
+            $pbit_files = @($(git diff --name-only $git_event_before $git_event_after --diff-filter=ACM "*.pbit"))
+            $pbit_files = $pbit_files | ForEach-Object { Join-Path $root_path $_ | Get-Item }
 
-            if ($pbix_files.Count -eq 0) {
-              Write-Warning "Something went wrong! Could not find any changed .pbix files using the above 'git diff' command!"
-              Write-Information "Getting all .pbix files in the repo to be sure to get all changes!"
-              # get all .pbix files in the current repository
-              $pbix_files = Get-ChildItem -Path (Join-Path $root_path $manual_trigger_path_filter) -Recurse -Filter "*.pbix" -File
+            if ($pbit_files.Count -eq 0) {
+              Write-Warning "Something went wrong! Could not find any changed .pbit files using the above 'git diff' command!"
+              Write-Information "Getting all .pbit files in the repo to be sure to get all changes!"
+              # get all .pbit files in the current repository
+              $pbit_files = Get-ChildItem -Path (Join-Path $root_path $manual_trigger_path_filter) -Recurse -Filter "*.pbit" -File
             }
           }
           elseif ($triggered_by -eq "Manual" -or $triggered_by -eq "workflow_dispatch") {
-            # get all .pbix files in the current repository
-            $pbix_files = Get-ChildItem -Path (Join-Path $root_path $manual_trigger_path_filter) -Recurse -Filter "*.pbix" -File
+            # get all .pbit files in the current repository
+            $pbit_files = Get-ChildItem -Path (Join-Path $root_path $manual_trigger_path_filter) -Recurse -Filter "*.pbit" -File
           }
           else {
             Write-Error "Invalid Trigger!"
           }
 
-          Write-Information "Changed .pbix files ($($pbix_files.Count)):"
-          $pbix_files | ForEach-Object { Write-Information "$ind$($_.FullName)" }
+          Write-Information "Changed .pbit files ($($pbit_files.Count)):"
+          $pbit_files | ForEach-Object { Write-Information "$ind$($_.FullName)" }
 
           # we need to set Serialization Options to allow export to Folder via TE2
           $serialization_options = '{
@@ -157,25 +157,25 @@ jobs:
           "Model.SetAnnotation(""TabularEditor_SerializeOptions"", ReadFile(@""$(Join-Path $tabular_editor_root_path "TabularEditor_SerializeOptions.json")""));" `
             | Out-File (Join-Path $tabular_editor_root_path "ApplySerializeOptionsAnnotation.csx")
 
-          foreach ($pbix_file in $pbix_files) {
+          foreach ($pbit_file in $pbit_files) {
             $report = $null
             $dataset = $null
             try {
-              Write-Information "Processing  $($pbix_file.FullName) ... "
+              Write-Information "Processing  $($pbit_file.FullName) ... "
 
-              Write-Information "$ind Checking if PBIX file contains a datamodel ..."
-              $zip_entries = [IO.Compression.ZipFile]::OpenRead($pbix_file.FullName).Entries.Name;
+              Write-Information "$ind Checking if PBIT file contains a datamodel ..."
+              $zip_entries = [IO.Compression.ZipFile]::OpenRead($pbit_file.FullName).Entries.Name;
               if ("DataModel" -notin $zip_entries) {
-                Write-Information "$ind No datamodel found in $($pbix_file.Name) - skipping further processing of this file!"
+                Write-Information "$ind No datamodel found in $($pbit_file.Name) - skipping further processing of this file!"
                 continue
               }
               else {
                 Write-Information "$ind Datamodel found!"
               }
 
-              $temp_name = "$($pbix_file.BaseName)-$(Get-Date -Format 'yyyyMMddTHHmmss')"
-              Write-Information "$ind Uploading $($pbix_file.FullName.Replace($root_path, '')) to $($workspace.Name)/$temp_name ... "
-              $report = New-PowerBIReport -Path $pbix_file.FullName -Name $temp_name -WorkspaceId $workspace.Id
+              $temp_name = "$($pbit_file.BaseName)-$(Get-Date -Format 'yyyyMMddTHHmmss')"
+              Write-Information "$ind Uploading $($pbit_file.FullName.Replace($root_path, '')) to $($workspace.Name)/$temp_name ... "
+              $report = New-PowerBIReport -Path $pbit_file.FullName -Name $temp_name -WorkspaceId $workspace.Id
               Start-Sleep -Seconds 5
               Write-Information "$ind$ind Done!"
 
@@ -185,29 +185,29 @@ jobs:
 
               Write-Information "$ind Extracting metadata ..."
               $executable = Join-Path $tabular_editor_root_path TabularEditor.exe
-              $output_path = "$(Join-Path $pbix_file.DirectoryName $pbix_file.BaseName)"
+              $output_path = "$(Join-Path $pbit_file.DirectoryName $pbit_file.BaseName)"
               $params = @(
                 """Provider=MSOLAP;Data Source=$connection_string;$login_info"""
                 """$($dataset.Name)"""
                 "-SCRIPT ""$(Join-Path $tabular_editor_root_path 'ApplySerializeOptionsAnnotation.csx')"""
-                "-FOLDER ""$output_path"" ""$($pbix_file.BaseName)"""
+                "-FOLDER ""$output_path"" ""$($pbit_file.BaseName)"""
               )
 
               Write-Debug "$ind $executable $params"
               $p = Start-Process -FilePath $executable -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$temp_name.log" -ArgumentList $params
 
               if ($p.ExitCode -ne 0) {
-                Write-Error "$ind Failed to extract PBIX metadata from $($dataset.WebUrl)!"
+                Write-Error "$ind Failed to extract PBIT metadata from $($dataset.WebUrl)!"
               }
 
-              Write-Information "$ind Extracted PBIX metadata to FOLDER '($output_path)'!"
+              Write-Information "$ind Extracted PBIT metadata to FOLDER '($output_path)'!"
               Write-Information "$ind Overwriting 'name' and 'id' properties now ..."
               # need to overwrite id and name as they are taken from the temporary dataset
               $bim_json = Get-Content (Join-Path $output_path "database.json") | ConvertFrom-Json
-              $bim_json.name = $pbix_file.BaseName
-              $bim_json.id = $pbix_file.BaseName
+              $bim_json.name = $pbit_file.BaseName
+              $bim_json.id = $pbit_file.BaseName
               $bim_json | ConvertTo-Json -Depth 50 | Out-File (Join-Path $output_path "database.json")
-              Write-Information "$ind PBIX metadata written to FOLDER '$output_path'!"
+              Write-Information "$ind PBIT metadata written to FOLDER '$output_path'!"
             }
             catch {
               Write-Warning "An error occurred:"
@@ -228,7 +228,7 @@ jobs:
           Write-Information "Finished!"
       shell: pwsh
 
-    - name: Push PBIX metadata to Git repo
+    - name: Push PBIT metadata to Git repo
       run: |
           git config --global user.name '${{ github.actor }}'
           git config --global user.email '${{ github.actor }}@users.noreply.github.com'
@@ -237,5 +237,5 @@ jobs:
           git stash apply
           git add **/*.json
           git status --porcelain
-          git commit -am "Automated extracton of metadata from PBIX via ${{ github.workflow }} - original changes by ${{ github.actor }}"
+          git commit -am "Automated extraction of metadata from PBIT via ${{ github.workflow }} - original changes by ${{ github.actor }}"
           git push
