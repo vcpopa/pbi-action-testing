@@ -8,17 +8,28 @@ on:
 jobs:
   deserialize:
     runs-on: ubuntu-latest
+
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # OR "2" -> To retrieve the preceding commit.
+
+      - name: Install required tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full jq
+
+      - name: Set executable permissions for action.sh
+        run: chmod +x ${GITHUB_WORKSPACE}/action.sh
+
       - name: Deserialize PBIT files
         run: ${GITHUB_WORKSPACE}/action.sh
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.number }}
+
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Deserialize Power BI files
